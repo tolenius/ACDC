@@ -19,7 +19,7 @@ Please note that ACDC is a kinetic model, and does not contain assumptions on th
 If you use the codes provided in this repository in any study, please reference the following papers:
 
 * Simulations of molecular cluster sets by e.g. the standard Matlab tools: Olenius et al.: Free energy barrier in the growth of sulfuric acid–ammonia and sulfuric acid–dimethylamine clusters, J. Chem. Phys. 139, 084312 (2013), https://doi.org/10.1063/1.4819024
-* Coupling of ACDC to an aeorsol dynamics models by the Fortran routines: Roldin et al.: The role of highly oxygenated organic molecules in the Boreal aerosol-cloud-climate system, Nat. Commun. 10, 4370 (2019), doi:10.1038/s41467-019-12338-8
+* Coupling of ACDC to an aeorsol dynamics models by the Fortran routines: Roldin et al.: The role of highly oxygenated organic molecules in the Boreal aerosol-cloud-climate system, Nat. Commun. 10, 4370 (2019), https://doi.org/10.1038/s41467-019-12338-8
 
 ## Prerequisites
 
