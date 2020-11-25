@@ -14,6 +14,13 @@ This repository contains the cluster equation generator, which is the core of AC
 
 Please note that ACDC is a kinetic model, and does not contain assumptions on the thermodynamic properties of the simulated clusters. Instead, the thermodynamic data is given as input to ACDC. Recent data for clusters of different chemical compositions can be found, for example, in the [Atmospheric Cluster Database (ACDB)](https://github.com/elmjonas/ACDB).
 
+## Citation
+
+If you use the codes provided in this repository in any study, please reference the following papers:
+
+* Simulations of molecular cluster sets by e.g. the standard Matlab tools: Olenius et al.: Free energy barrier in the growth of sulfuric acid–ammonia and sulfuric acid–dimethylamine clusters, J. Chem. Phys. 139, 084312 (2013), https://doi.org/10.1063/1.4819024
+* Coupling of ACDC to an aeorsol dynamics models by the Fortran routines: Roldin et al.: The role of highly oxygenated organic molecules in the Boreal aerosol-cloud-climate system, Nat. Commun. 10, 4370 (2019), doi:10.1038/s41467-019-12338-8
+
 ## Prerequisites
 
 In order to use ACDC (on either Windows or Unix), the following software must be installed:
