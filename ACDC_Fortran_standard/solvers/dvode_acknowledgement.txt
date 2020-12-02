@@ -1,0 +1,4 @@
+The VODE solver is In the Public Domain (IPD) and is freely available at https://computing.llnl.gov/casc/odepack/.
+
+Please acknowledge Lawrence Livermore National Laboratory (LLNL) and cite the following work:
+Brown, P. N., Byrne, G. D., and Hindmarsh, A. C.: VODE, a variable-coefficient ODE solver, SIAM J. Sci. Stat. Comput. 10, 1038-1051 (1989), https://doi.org/10.1137/0910062
