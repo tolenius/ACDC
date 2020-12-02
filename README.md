@@ -10,7 +10,7 @@ ACDC can be applied to
 * Include the initial particle formation dynamics in an aerosol dynamics model by direct coupling
 * Generate nanoparticle formation rate data to be used in larger-scale models
 
-This repository contains the cluster equation generator, which is the core of ACDC, as well as ready-made templates for easy conducting of standard simulations. Detailed information on all available features can be found in the technical manual, and the quick guide provides the essentials to consider when applying the model on a given set of molecular clusters.
+This repository contains the cluster equation generator (acdc_YYYY_MM_DD.pl), which is the core of ACDC, as well as ready-made templates for easy conducting of standard simulations (ACDC_Matlab_standard and ACDC_Fortran_standard). Detailed information on all available features can be found in the technical manual, and the quick guide provides the essentials to consider when applying the model on a given set of molecular clusters.
 
 Please note that ACDC is a kinetic model, and does not contain assumptions on the thermodynamic properties of the simulated clusters. Instead, the thermodynamic data is given as input to ACDC. Recent data for clusters of different chemical compositions can be found, for example, in the [Atmospheric Cluster Database (ACDB)](https://github.com/elmjonas/ACDB).
 
