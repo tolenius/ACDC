@@ -31,7 +31,9 @@ Note that the repository contains a few individual functions or routines by othe
 
 The following freely available functions and routines are used in some of the standard ACDC set-ups:
 
-### Matlab functions available in the Matlab File Exchange (https://se.mathworks.com/matlabcentral/fileexchange/)
+### Matlab functions
+
+All functions are available in the Matlab File Exchange (https://se.mathworks.com/matlabcentral/fileexchange/).
 
 arrow.m<br/>
 Erik Johnson (2020). arrow (https://www.mathworks.com/matlabcentral/fileexchange/278-arrow), MATLAB Central File Exchange. Retrieved October 29, 2020.
