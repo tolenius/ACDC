@@ -7,19 +7,20 @@ ACDC can be applied to
 * Simulate cluster formation from different chemical compounds using quantum chemical input data
 * Study the details of cluster growth processes by, for example, tracking the growth pathways in simulations
 * Evaluate experimental methods to interpret measured molecular cluster data by generating synthetic test data
-* Include the initial particle formation dynamics in an aerosol dynamics model by direct coupling
-* Generate nanoparticle formation rate data to be used in larger-scale models
+* Generate nanoparticle formation rate data to be used in large-scale models
 
-This repository contains the cluster equation generator (acdc_YYYY_MM_DD.pl), which is the core of ACDC, as well as ready-made templates for easy conducting of standard simulations (ACDC_Matlab_standard and ACDC_Fortran_standard). Detailed information on all available features can be found in the technical manual, and the quick guide provides the essentials to consider when applying the model on a given set of molecular clusters.
+This repository contains the cluster equation generator, which is the core of ACDC, as well as ready-made templates for easy conducting of standard simulations. Detailed information on all available features can be found in the technical manual, and the quick guide provides the essentials to consider when applying the model on a given set of molecular clusters.
 
-Please note that ACDC is a kinetic model, and does not contain assumptions on the thermodynamic properties of the simulated clusters. Instead, the thermodynamic data is given as input to ACDC. Recent data for clusters of different chemical compositions can be found, for example, in the [Atmospheric Cluster Database (ACDB)](https://github.com/elmjonas/ACDB).
+***Note 1*** Please note that ACDC is a kinetic model, and does not contain assumptions on the thermodynamic properties of the simulated clusters. Instead, the thermodynamic data is given as input to ACDC. Recent data for clusters of different chemical compositions can be found, for example, in the [Atmospheric Cluster Database (ACDB)](https://github.com/elmjonas/ACDB).
+
+***Note 2*** Also note that the initial formation of ~1-2 nm aerosol particles is generally characterized by steady-state formation rates which involves specific assumptions. It is also possible to simulate the initial particle formation dynamics and their effects on aerosol size distributions explicitly by a direct coupling of cluster and aerosol models instead of using steady-state rates. For this, use the [ClusterIn plugin](https://github.com/tolenius/ClusterIn).
 
 ## Citation
 
-If you use the codes provided in this repository in any study, please reference the following papers:
+If you use the codes provided in this repository in any study, please cite at least one of the following works:
 
-* Simulations of molecular cluster sets by e.g. the standard Matlab tools: Olenius et al.: Free energy barrier in the growth of sulfuric acid–ammonia and sulfuric acid–dimethylamine clusters, J. Chem. Phys. 139, 084312 (2013), https://doi.org/10.1063/1.4819024
-* Coupling of ACDC to an aerosol dynamics model by the Fortran routines: Roldin et al.: The role of highly oxygenated organic molecules in the Boreal aerosol-cloud-climate system, Nat. Commun. 10, 4370 (2019), https://doi.org/10.1038/s41467-019-12338-8
+* This repository (https://github.com/tolenius/ACDC)
+* Olenius et al.: Free energy barrier in the growth of sulfuric acid–ammonia and sulfuric acid–dimethylamine clusters, J. Chem. Phys. 139, 084312 (2013), https://doi.org/10.1063/1.4819024
 
 ## License
 
@@ -61,4 +62,4 @@ Note that some features, such as the growth pathway tracking, are available only
 
 ## Authors
 
-Code maintainer: **Tinja Olenius** (tinja.olenius@alumni.helsinki.fi)
+Code developer: **Tinja Olenius** (tinja.olenius@alumni.helsinki.fi)
