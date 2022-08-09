@@ -9,7 +9,7 @@ ACDC can be applied to
 * Evaluate experimental methods to interpret measured molecular cluster data by generating synthetic test data
 * Generate nanoparticle formation rate data to be used in large-scale models
 
-This repository contains the cluster equation generator, which is the core of ACDC, as well as ready-made templates for easy conducting of standard simulations. Detailed information on all available features can be found in the technical manual, and the quick guide provides the essentials to consider when applying the model on a given set of molecular clusters.
+This repository contains the cluster equation generator, which is the core of ACDC, as well as ready-made templates for easy conducting of standard simulations. Detailed information on all available features can be found in the technical manual, and the quick guide provides the essentials to consider when applying the model on a given set of molecular clusters. The most recent version of the equation generator (and the manual) is available above, and can be applied to utilize newly-added features. Updated versions are always compatible with the standard Matlab and Fortran distributions.
 
 ***Note 1*** Please note that ACDC is a kinetic model, and does not contain assumptions on the thermodynamic properties of the simulated clusters. Instead, the thermodynamic data is given as input to ACDC. Recent data for clusters of different chemical compositions can be found, for example, in the [Atmospheric Cluster Database (ACDB)](https://github.com/elmjonas/ACDB).
 
