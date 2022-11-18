@@ -11,10 +11,13 @@
 
 lJ=1;               % Plot the steady-state J
 ldistribution=0;    % Plot the steady-state cluster distributions
-ldimers=0;          % Plot the total concentration of electrically neutral clusters containing two molecules A (typically an acid)
+lnmers=0;           % Plot the total concentration of electrically neutral clusters containing n molecules A (typically an acid)
+%ldimers=0;         % Deprecated - same as above but including only 2-mers
 lfluxes=0;          % Track and plot the growth pathways
+lroute=0;           % Save the main growth pathway
 
 save_data=0;        % Save the simulation output (as .mat)
+lshow=1;            % Draw the given figures (or only calculate the data)
 
 
 %%%%%%%%% Figure formats %%%%%%%%%
@@ -36,7 +39,7 @@ A='A';              % Compound A: Primarily the main driver of clustering, most 
 B={'N'};            % Additional compound(s) B: Most often bases, 1 or 2 compounds
 
 % Cluster set file
-inputfile=['./Cluster_set_files/input_',A,B{:},'_neutral_neg_pos.inp'];
+inputfile=['./Cluster_set_files/B3LYP_RICC2/input_',A,B{:},'_neutral_neg_pos.inp'];
 
 % DeltaG / DeltaH, DeltaS file
 Gfile='./Energy_and_rate_files/B3LYP_RICC2/HS298.15K_example.txt';
@@ -100,7 +103,10 @@ end
 lexp_loss=1;
 if lexp_loss == 1
     cs_exp=-1.6;    % Exponent; typical boundary layer value: -1.6
-    cs_ref=1e-3;    % Reference loss rate for a vapor (H2SO4) monomer (s^-1); typical boundary layer values: 1e-4...1e-2
+    cs_ref=1e-3;    % Reference loss rate for a vapor monomer (s^-1); typical boundary layer values: 1e-4...1e-2
+    % Size for cs_ref - if nothing is given here, either the monomer (1-comp. system) or H2SO4 diameter (>1-comp. system) is used
+    cs_ref_str=[' --exp_loss_ref_cluster 1',A]; % Component A in the current system
+    %cs_ref_str=' --exp_loss_ref_size 0.55';     % Approximate diameter of H2SO4
 end
 
 % CLOUD experiment: wall and dilution losses
@@ -109,7 +115,7 @@ lCLOUD_loss=0;
 
 % Settings related to ions (optional; if no ions are included, IPR is discarded)
 
-% Ionization rate (cm^-3 s^-1)
+% Ionization rate (cm^-3 s^-1); typical boundary layer value: ca. 3
 IPR=3;
 
 % Ion wall loss enhancement factor for CLOUD

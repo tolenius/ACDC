@@ -27,6 +27,7 @@ end
 
 roundvalues=[];
 roundnames=cell(1,size(names,2));
+
 k=0;
 for i=1:length(values)
     % take just the significant values
@@ -36,10 +37,15 @@ for i=1:length(values)
         roundnames(k,:)=names(i,:);
     end
 end
-value_temp=sum(values,'omitnan')-sum(roundvalues,'omitnan');
-if value_temp~=0
+
+% sort them in descending order
+[roundvalues,ind]=sort(roundvalues,'descend');
+roundnames=roundnames(ind,:);
+
+value_tmp=sum(values,'omitnan')-sum(roundvalues,'omitnan');
+if value_tmp > 0
     k=k+1;
-    roundvalues(k)=value_temp;
+    roundvalues(k)=value_tmp;
     roundnames{k,1}='Others';
 end
 

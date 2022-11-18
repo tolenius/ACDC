@@ -21,6 +21,14 @@ fignums=[1 2 3 4 5];
 % or overwrite previous figures
 l_add_figs=1;
 
+% Possible limits for colormaps for each figure (in the order above);
+% useful e.g. for comparing different data sets on the same color scale
+% Use [nan nan] to not apply any limits
+fig_caxis=[[nan nan]; [nan nan]; [1e-10 1e10]; [nan nan]; [nan nan]];
+
+% Add a diagonal line to the figure to better distiguish area around 1:1 compositions
+l_diag=1;
+
 
 %%%%%%%%% Cluster set and conditions %%%%%%%%%
 
@@ -68,7 +76,7 @@ rh=0;
 lrun_perl=1;
 
 % Cluster set file for obtaining the rate constants from ACDC
-inputfile=['./Cluster_set_files/input_',A,B,'_neutral_neg_pos.inp'];
+inputfile=['./Cluster_set_files/B3LYP_RICC2/input_',A,B,'_neutral_neg_pos.inp'];
 
 % DeltaG / DeltaH, DeltaS file
 Gfile='./Energy_and_rate_files/B3LYP_RICC2/HS298.15K_example.txt';
@@ -79,10 +87,13 @@ DPfile='./Energy_and_rate_files/B3LYP_RICC2/dip_pol_298.15K_example.txt';
 
 %%%%%%%%% Miscellaneous %%%%%%%%%
 
+% Additional options for the Perl script
+%add_perl_opt=' --no_nonmonomer_evaps';
+
 % Assume that the A concentration is the true monomer concentration, or assume that it is the "measurable" concentration
 % and use a simulation result to obtain the true monomer concentration
 % For assessing collision/evaporation ratios, this doesn't matter, but for precise actual DeltaGs,
-% lmon_A should be set to 1 for systems where e.g. (1acid,nbase)-clusters are likely to form
+% lmon_A should be set to 0 for systems where e.g. (1acid,nbase)-clusters are likely to form
 lmon_A=1;
 
 if ~lmon_A

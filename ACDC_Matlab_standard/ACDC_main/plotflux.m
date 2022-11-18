@@ -35,24 +35,18 @@ end
 % Default values
 crit=0.01;  % criteria for the most significant fluxes (fraction of the total flux)
 
-lshowall=0; % print all the fluxes to the screen (instead of just the main fluxes)
 lsame_ch=0; % track the fluxes based on the charge and not on the absolute number of molecules
 lpairs=0;   % return both parties of a collision/evaporation (only the larger one is returned by default)
 lgrowth=0;  % when the direction is 'from', growth to sizes that are larger than
                 % 2 times the number of molecules in the growing ("target") cluster, i.e. if A+B->C,
                 % C_mols<=2*A_mols, are classified as self-coagulation
-lpie=0;     % draw a pie chart
+ldisp=0;    % print the main fluxes to the screen and draw a pie chart
+lshowall=0; % print all the fluxes to the screen (instead of just the main fluxes)
 
 if ~isempty(varargin)
     for i=1:length(varargin)
         if strcmpi(varargin{i},'crit')
             crit=varargin{i+1};
-        elseif strcmpi(varargin{i},'lshowall')
-            if length(varargin)>i && isnumeric(varargin{i+1})
-                lshowall=varargin{i+1};
-            else
-                lshowall=1;
-            end
         elseif strcmpi(varargin{i},'lsame_ch')
             if length(varargin)>i && isnumeric(varargin{i+1})
                 lsame_ch=varargin{i+1};
@@ -74,8 +68,18 @@ if ~isempty(varargin)
             else
                 lgrowth=1;
             end
-        elseif strcmpi(varargin{i},'pie')
-            lpie=1;
+        elseif strcmpi(varargin{i},'ldisp')
+            if length(varargin)>i && isnumeric(varargin{i+1})
+                ldisp=varargin{i+1};
+            else
+                ldisp=1;
+            end
+        elseif strcmpi(varargin{i},'lshowall')
+            if length(varargin)>i && isnumeric(varargin{i+1})
+                lshowall=varargin{i+1};
+            else
+                lshowall=1;
+            end
         elseif strcmpi(varargin{i},'fn')
             fn=varargin{i+1};
         end
@@ -312,22 +316,23 @@ else
     else
         [roundfluxname,roundfluxval] = get_significant(fluxname,fluxval,'crit',crit);
     end
-
-    % Print the result to the workspace
-    str=['Main fluxes ',direction,' ',tar,': '];        
-    for i=1:length(roundfluxval)
-        str=[str,'  ',roundfluxname{i,1},' ',num2str(round(roundfluxval(i)/sum(fluxval)*100)),'% '];
-    end
-    str=[str,'  Total flux ',sprintf('%0.3g',sum(fluxval)),' cm^-3 s^-1'];
-    disp(str)
-    if lshowall
-        disp(['All fluxes ',direction,' ',tar,': ']);        
-        for i=1:length(fluxval)
-            disp([fluxname{i,1},' ',sprintf('%0.3g',fluxval(i)/sum(fluxval)*100),'% '])
+    
+    if ldisp
+        
+        % Print the result to the workspace
+        str=['Main fluxes ',direction,' ',tar,': '];        
+        for i=1:length(roundfluxval)
+            str=[str,'  ',roundfluxname{i,1},' ',num2str(round(roundfluxval(i)/sum(fluxval)*100)),'% '];
         end
-    end
+        str=[str,'  Total flux ',sprintf('%0.3g',sum(fluxval)),' cm^-3 s^-1'];
+        disp(str)
+        if lshowall
+            disp(['All fluxes ',direction,' ',tar,': ']);        
+            for i=1:length(fluxval)
+                disp([fluxname{i,1},' ',sprintf('%0.3g',fluxval(i)/sum(fluxval)*100),'% '])
+            end
+        end
 
-    if lpie
         % Do a pie plot
         figure(12)
         set(gca,'LineWidth',2,'FontWeight','bold','FontSize',12);
@@ -338,6 +343,7 @@ else
         title(['Total flux ',direction,' ',tar,' ',sprintf('%0.3g',sum(fluxval)),' cm^{-3}s^{-1}'])
         drawnow
         hold off
+
     end
 
 end

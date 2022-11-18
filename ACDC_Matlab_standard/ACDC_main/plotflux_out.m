@@ -24,6 +24,7 @@ out_channel={};     % Consider only specific outgrowth channels, either in terms
                     % specific boundary clusters (out_channel is a cell array of cluster names), or flux out from
                     % clusters with a given composition (out_channel is a cell array of molecule names)
 
+ldisp=0;            % Print the main fluxes to the screen and draw a pie chart
 lshowall=0;         % Print all the outgoing fluxes to the screen (instead of only the main fluxes)
 lclusters_out=0;    % List also the clusters that got out
 
@@ -32,12 +33,18 @@ lclusters_out=0;    % List also the clusters that got out
 if ~isempty(varargin)
     for i=1:length(varargin)
         if ischar(varargin{i})
-            if strcmpi(varargin{i},'ch')
+            if strcmpi(varargin{i},'crit')
+                crit=varargin{i+1};
+            elseif strcmpi(varargin{i},'ch')
                 ch=varargin{i+1};
             elseif strcmpi(varargin{i},'out_channel')
                 out_channel=varargin{i+1};
-            elseif strcmpi(varargin{i},'crit')
-                crit=varargin{i+1};
+            elseif strcmpi(varargin{i},'ldisp')
+                if length(varargin)>i && isnumeric(varargin{i+1})
+                    ldisp=varargin{i+1};
+                else
+                    ldisp=1;
+                end
             elseif strcmpi(varargin{i},'lshowall')
                 lshowall=1;
             elseif strcmpi(varargin{i},'lclusters_out')
@@ -193,28 +200,33 @@ else
     plotsum=outfluxsum;
     str_rel=[str_rel,')'];
 end
-fprintf(['\n',str_total,'\n\n'])
 
-disp(['Main collisions leading out',str_spec,': ']);
-disp(str_rel)
-for i=1:length(roundout)
-    disp([roundoutname{i},' ',num2str(round(roundout(i)/plotsum*100)),'% '])
-end
-if lshowall
-    disp('All collisions out: ');
-    for i=1:length(allout)
-        disp([alloutname{i},' ',sprintf('%0.3g',allout(i)/plotsum*100),'% '])
+if ldisp
+
+    fprintf(['\n',str_total,'\n\n'])
+
+    disp(['Main collisions leading out',str_spec,': ']);
+    disp(str_rel)
+    for i=1:length(roundout)
+        disp([roundoutname{i},' ',num2str(round(roundout(i)/plotsum*100)),'% '])
     end
-end
+    if lshowall
+        disp('All collisions out: ');
+        for i=1:length(allout)
+            disp([alloutname{i},' ',sprintf('%0.3g',allout(i)/plotsum*100),'% '])
+        end
+    end
 
-figure(11)
-set(gca,'LineWidth',2,'FontWeight','bold','FontSize',12);
-set(gcf,'Color','white')
-pie(roundout/plotsum)
-hold on
-legend(roundoutname,'Location','BestOutside')
-title(sprintf(str_total))
-hold off
+    figure(11)
+    set(gca,'LineWidth',2,'FontWeight','bold','FontSize',12);
+    set(gcf,'Color','white')
+    pie(roundout/plotsum)
+    hold on
+    legend(roundoutname,'Location','BestOutside')
+    title(sprintf(str_total))
+    hold off
+
+end
 
 % List the clusters getting out?
 if lclusters_out
@@ -244,19 +256,24 @@ if lclusters_out
     
     [roundoutclust,roundout_forclust] = get_significant(alloutclust,allout_forclust,'crit',crit);
 
-    disp('Clusters getting out of the system: ');
-    for i=1:length(roundout_forclust)
-        disp([roundoutclust{i},' ',num2str(round(roundout_forclust(i)/plotsum*100)),'% '])
+    if ldisp
+    
+        disp('Clusters getting out of the system: ');
+        for i=1:length(roundout_forclust)
+            disp([roundoutclust{i},' ',num2str(round(roundout_forclust(i)/plotsum*100)),'% '])
+        end
+
+        figure(2)
+        set(gca,'LineWidth',2,'FontWeight','bold','FontSize',12);
+        set(gcf,'Color','white')
+        pie(roundout_forclust/plotsum)
+        hold on
+        legend(roundoutclust)
+        title(sprintf(str_total))
+        hold off
+    
     end
     
-    figure(2)
-    set(gca,'LineWidth',2,'FontWeight','bold','FontSize',12);
-    set(gcf,'Color','white')
-    pie(roundout_forclust/plotsum)
-    hold on
-    legend(roundoutclust)
-    title(sprintf(str_total))
-    hold off
 end
 
 end

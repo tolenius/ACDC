@@ -83,6 +83,11 @@ if exist('rh','var')
     end
 end
 
+% Additional options
+if exist('add_perl_opt','var')
+    commandstr=[commandstr,regexprep(add_perl_opt,'^--',' --')];
+end
+
 % Run the Perl script to create the rate constant files
 if lrun_perl
     fprintf(['\nGenerating the rate constant files:\n',regexprep(commandstr,'\s+--','\n--'),'\n\n'])
@@ -97,14 +102,14 @@ end
 
 % Get the cluster and ion names from the driver file
 fid=fopen('driver_acdc.m','r');
-line=0;
-while line ~= -1
-    line=[fgetl(fid),' '];
-    if ~isempty(regexp(line,'^\s*clust\s*=\s*{', 'once'))
-        line=strrep(line,'clust','clust_acdc');
-        eval(line);
-    elseif ~isempty(regexp(line,'^\s*labels_ch\s*=\s*{', 'once'))
-        eval(line);
+ll=0;
+while ll ~= -1
+    ll=[fgetl(fid),' '];
+    if ~isempty(regexp(ll,'^\s*clust\s*=\s*{', 'once'))
+        ll=strrep(ll,'clust','clust_acdc');
+        eval(ll);
+    elseif ~isempty(regexp(ll,'^\s*labels_ch\s*=\s*{', 'once'))
+        eval(ll);
     end
     if exist('clust_acdc','var') && exist('labels_ch','var')
         break
@@ -521,6 +526,29 @@ for nCb=1:length(Cb_vector)
         
         Lwidth=3;
         Fsize=12;
+        Fsize_data=12;
+        
+        % Scaling of figure window size for large cluster sets
+        fig_size_def=[500 450];
+        maxmol_def=10;
+        scale_max=2; % Max. scaling factor for figure size
+        
+        xwidth_add=[diff(fig_size_def) 0];
+        val_tmp=max(maxA,maxB);
+        
+        if val_tmp > maxmol_def
+            
+            % Scale considering additional space reserved for colorbar etc.
+            fig_size_tmp=fig_size_def+xwidth_add;
+            fig_size=fig_size_tmp*min(val_tmp/maxmol_def,scale_max)-xwidth_add;
+            
+            Fsize_data=8;
+            
+        else
+            fig_size=fig_size_def;
+        end
+        
+        ax_pos=[60 80 fig_size+xwidth_add-120];
         
         hadd=0; % Numbers for the figure handles (windows): fignums+hadd
         if l_add_figs
@@ -563,32 +591,56 @@ for nCb=1:length(Cb_vector)
             pcolor_mat=[data nan(size(data,1),1); nan(1,size(data,2)+1)];
             
             figure(nfig+hadd)
+            
             if ~l_add_figs
                 clf(nfig+hadd)
             end
-            figpos=[50+520*(1-mod(nfig,2)) 500-450*floor(min(nfig,3)/3) 500 450];
+            figpos=[50+520*(1-mod(nfig,2)) 500-450*floor(min(nfig,3)/3) fig_size];
             if nfig > 4, figpos(1)=figpos(1)+520*(nfig-3); end
             set(gcf,'Position',figpos);
             %set(gca,'Position',[0.1 0.12 0.8 0.8]);
-            set(gca,'Position',[0.1 0.18 0.8 0.75]);
+            %set(gca,'Position',[0.1 0.18 0.8 0.75]);
+            % Set position in pixels (but keep the normalized units, otherwise all code below won't work)
+            setpixelposition(gca,ax_pos);
             set(gca,'FontSize',Fsize,'FontWeight','demi');
             set(gcf,'Color','white');
+            
             h=pcolor(pcolor_mat);
             %set(h,'LineWidth',2);
+            
+            % Limit colormap range
+            if all(~isnan(fig_caxis(nfig,:)))
+                if nfig < 3
+                    caxis(fig_caxis(nfig,:))
+                else
+                    caxis(log10(fig_caxis(nfig,:)))
+                end
+            end
+            
             if nfig <=2
                 colormap('cool')
             else
                 colormap('parula')
                 brighten(0.7)
             end
+            
             cb=colorbar('FontSize',Fsize,'FontWeight','demi');
+            pos_tmp_0=getpixelposition(gca); pos_tmp=getpixelposition(cb); % Avoid resizing current axis
+            setpixelposition(cb,[pos_tmp_0(1)+pos_tmp_0(3)+10, pos_tmp_0(2), pos_tmp(3), pos_tmp_0(4)]);
             ylabel(cb,data_label,'LineWidth',Lwidth,'FontSize',Fsize,'FontWeight','demi')
             if nfig == 3 || nfig == 4 || nfig == 5
                 ytickdata=get(cb,'YTick');
                 set(cb,'YTickLabel',cellfun(@(x) get_es_str(10^x,0),num2cell(ytickdata),'UniformOutput',false))
             end
+            
+            % Add possible diagonal line
+            if l_diag == 1
+                line([0 maxA+2],[0 maxB+2],'Color',0.8*ones(1,3),'LineWidth',2)
+            end
+            
             set(gca,'XTick',(1:maxA+1)+0.5,'XTickLabel',0:maxA,'FontSize',Fsize,'FontWeight','demi');
             set(gca,'YTick',(1:maxB+1)+0.5,'YTickLabel',0:maxB,'FontSize',Fsize,'FontWeight','demi');
+            
             if ch == 2
                 txt_str='^-';
             elseif ch == 3
@@ -604,8 +656,10 @@ for nCb=1:length(Cb_vector)
             else
                 ylabel(['Molecules ',B],'FontSize',Fsize,'FontWeight','demi')
             end
+            
             t=title(title_str,'FontSize',Fsize,'FontWeight','demi');
-            set(t,'Position',get(t,'Position')+[0.5 0 0])
+            set(t,'Position',get(t,'Position')+[2 0 0])
+            
             if l_inc_extra
                 txt_str=['All clusters contain also ',chem_label(clust_extra,labels_ch,0)];
                 annotation('textbox',[0.22 0.015 0.8 0.06],'String',txt_str,'FontSize',Fsize,'FontWeight','demi',...
@@ -627,7 +681,7 @@ for nCb=1:length(Cb_vector)
                         end
                         annotation('textbox',[pos(1)+width*(i-1),pos(2)+height*(j-1),width,height], ...
                             'string',str,'LineStyle','none','HorizontalAlignment', ...
-                            'center','VerticalAlignment','middle','FontWeight','demi','FontSize',Fsize);
+                            'center','VerticalAlignment','middle','FontWeight','demi','FontSize',Fsize_data);
                     end
                 end
             end

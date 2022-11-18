@@ -1,12 +1,12 @@
-function run_steadystate_ABB(fn_input,varargin)
+function [J,clust,conc,conc_An_tot,Ca_vector,Cb_vector,main_routes] = run_steadystate_ABB(fn_input,varargin)
 % Syntax:
 % run_steadystate_ABB(fn_input);
-% run_steadystate_ABB(fn_input,'var1',value1,'var2',value2...);
-% Variables 'var' and the subsequent values 'value' can be temp, IPR, cs_ref, dirpath, suffix
+% [J,clust,conc,conc_An_tot,Ca_vector,Cb_vector,main_routes] = run_steadystate_ABB(fn_input,'var1',value1,'var2',value2...);
+% For options for variables 'var' and the subsequent values 'value', see the cell array var_in in this function
 %
 % Description:
 % Get the simulated steady-state cluster concentrations, formation rate J, and growth pathways
-% for a 2- or 3-component system at given conditions
+% for a 1-, 2- or 3-component system at given conditions
 % Note that here J corresponds to flux of clusters growing out of the given simulation system
 % (i.e. the definition of J is not unambiguous, and J depends on the system size - keep this in mind when
 % comparing to experiments or other models)
@@ -15,6 +15,9 @@ function run_steadystate_ABB(fn_input,varargin)
 %
 % Some variables can also be given as additional input arguments (see the syntax above);
 % in this case the corresponding variables in the input file are not used
+%
+% Output variables can also be returned (instead of only plotting/saving variables in a .mat file);
+% see the current output in the function definition above (or add/remove variables according to your needs)
 
 
 addpath('../Matlab_general','-end')
@@ -29,19 +32,16 @@ end
 run(fn_input);
 
 
-% See if some variables are given as input
+% See if some variables are given as input, and fill in/override them
+% Same variables are expected in fn_input, except for add_perl_opt_append which is appended to the Perl call
+% (while add_perl_opt overrides the add_perl_opt of fn_input)
+var_in={'inputfile', 'Gfile', 'DPfile', 'temp', 'rh', 'pw', 'IPR', 'cs_ref', 'dirpath', 'suffix', 'add_perl_opt', 'add_perl_opt_append'};
+
 if ~isempty(varargin)
     for i=1:2:length(varargin)
-        if strcmpi(varargin{i},'temp')
-            temp=varargin{i+1};
-        elseif strcmpi(varargin{i},'IPR')
-            IPR=varargin{i+1};
-        elseif strcmpi(varargin{i},'cs_ref')
-            cs_ref=varargin{i+1};
-        elseif strcmpi(varargin{i},'dirpath')
-            dirpath=varargin{i+1};
-        elseif strcmpi(varargin{i},'suffix')
-            suffix=varargin{i+1};
+        if ismember(varargin{i},var_in)
+            % eval is not a good practice, but it's easiest for now
+            eval([varargin{i},'=varargin{i+1};'])
         else
             if isnumeric(varargin{i}), str=num2str(varargin{i}); else, str=varargin{i}; end
             help run_steadystate_ABB
@@ -67,9 +67,12 @@ end
 % Temperature (in case H and S are used instead of G)
 commandstr=[commandstr,' --temperature ',num2str(temp)];
 
-% RH
-if rh > 0
+% RH or partial pressure of water
+if exist('rh','var')
     commandstr=[commandstr,' --rh ',num2str(rh)];
+end
+if exist('pw','var')
+    commandstr=[commandstr,' --pw ',sprintf('%.14e',pw)];
 end
 
 % Possible loss terms
@@ -79,6 +82,12 @@ loss_infostr='';
 
 if lexp_loss == 1
     loss_commandstr=[loss_commandstr,' --use_cs --cs exp_loss --exp_loss_coefficient ',num2str(cs_ref),' --exp_loss_exponent ',num2str(cs_exp)];
+    if exist('cs_ref_str','var')
+        loss_commandstr=[loss_commandstr,regexprep(cs_ref_str,'^--',' --')];
+    elseif exist('B','var')
+        % Use approximate diameter of H2SO4, if no specific monomer is given as the reference size
+        loss_commandstr=[loss_commandstr,' --exp_loss_ref_size 0.55'];
+    end
     loss_suffixstr=[loss_suffixstr,'_cs_exp',num2str(cs_exp),'_ref',sprintf('%.6e',cs_ref)];
     loss_infostr=[loss_infostr,', scavenging: {\itm} = ',num2str(cs_exp),', CS_{ref} = ',sprintf('%.2e',cs_ref),' s^{-1}'];
 end
@@ -101,10 +110,10 @@ end
 
 % Additional options
 if exist('add_perl_opt','var')
-    if add_perl_opt(1) ~= ' '
-        add_perl_opt=[' ',add_perl_opt];
-    end
-    commandstr=[commandstr,add_perl_opt];
+    commandstr=[commandstr,regexprep(add_perl_opt,'^--',' --')];
+end
+if exist('add_perl_opt_append','var')
+    commandstr=[commandstr,regexprep(add_perl_opt_append,'^--',' --')];
 end
 
 % Run the Perl script
@@ -153,34 +162,80 @@ if IPR > 0
     end
 end
 
-if ldimers
-    % Find the cluster indices corresponding to clusters containing two molecules A
-    n_2A=[];
+
+% Find the indices of clusters containing 2, 3, 4, ... molecules of type A
+% Previously used variable which only considered dimers
+if exist('ldimers','var')
+    if ldimers
+        lnmers=1;
+    end
+else
+    ldimers=0;
+end
+if lnmers
+    n_An=cell(1);
     for nc=1:length(clust)
-        if solve_charge(clust{nc},labels_ch) == 1 % Only neutral clusters
+        % Consider only neutral clusters
+        if solve_charge(clust{nc},labels_ch) == 1
             [molnames,nmols]=parse_cluster(clust{nc});
             if ismember(A,molnames)
-                nA=strcmp(A,molnames);
-                if nmols(nA) == 2
-                    n_2A=[n_2A nc];
+                nmols_A=nmols(strcmp(A,molnames));
+                if length(n_An) < nmols_A
+                    n_An{nmols_A}=[];
                 end
+                n_An{nmols_A}=[n_An{nmols_A} nc];
             end
         end
     end
+    maxn_An=length(n_An);
+    if ldimers
+        plot_An=2;
+    else
+        plot_An=1:maxn_An;
+    end
 end
 
+% Plot or save growth routes
+% Previously only plotting of fluxes was possible
+if ~exist('lroute','var')
+    if lfluxes
+        lroute=1;
+    else
+        lroute=0;
+    end
+end
+
+% Draw the given figures (or only calculate the data)
+if ~exist('lshow','var')
+    lshow=1;
+end
 
 %%%%%%%%% Create the vectors and matrices etc. needed  %%%%%%%%%
 %%%%%%%%% in the simulation and for saving the results %%%%%%%%%
 
-if lmon_A
-    fprintf(['\nUsing the true ',A,' monomer concentration - do you really want this?\n'])
+if ~exist('B','var')
+    B={};
 end
 
-if length(B)==1
+if isempty(B)
+    Cb_vector{1}=[0];
+    Cb_vector_ppt{1}=[0];
+    Cb_limits{1}=[0 0];
+    Cb_points{1}=1;
+    
+    % If there is only compound A, its input concentration must correspond to monomers
+    lmon_A=1;
+end
+
+if length(B) < 2
     Cb_vector{2}=[0];
+    Cb_vector_ppt{2}=[0];
     Cb_limits{2}=[0 0];
     Cb_points{2}=1;
+end
+
+if lmon_A && ~isempty(B)
+    fprintf(['\nUsing the true ',A,' monomer concentration - do you really want this?\n'])
 end
 
 % Create the vapor concentration vectors, if vectors of separate values are not used
@@ -213,20 +268,22 @@ for nmolB=1:length(B)
 end
 
 % Create matrices/cells for the distributions and formation rate
-if length(B)==1
-    conc = cell(length(Ca_vector),length(Cb_vector{1}));
-    J = nan(length(Ca_vector),length(Cb_vector{1}));
-    if ldimers, conc_2A_tot = nan(length(Ca_vector),length(Cb_vector{1})); end
+conc = cell(length(Ca_vector),length(Cb_vector{1}),length(Cb_vector{2}));
+J = nan(length(Ca_vector),length(Cb_vector{1}),length(Cb_vector{2}));
+if lnmers
+    conc_An_tot=cell(1,maxn_An);
+    for nmols_A=1:maxn_An
+        conc_An_tot{nmols_A} = nan(length(Ca_vector),length(Cb_vector{1}),length(Cb_vector{2}));
+    end
 else
-    conc = cell(length(Ca_vector),length(Cb_vector{1}),length(Cb_vector{2}));
-    J = nan(length(Ca_vector),length(Cb_vector{1}),length(Cb_vector{2}));
-    if ldimers, conc_2A_tot = nan(length(Ca_vector),length(Cb_vector{1}),length(Cb_vector{2})); end
+    conc_An_tot=cell(1,1);
 end
+main_routes = cell(length(Ca_vector),length(Cb_vector{1}),length(Cb_vector{2}));
 
 if save_data==1
     % .mat file in which the results will be saved
-    %matfile=[dirpath,'C_J_',A,B{:},'_loss',loss_suffixstr,suffix,'.mat'];
-    matfile=[dirpath,'J',suffix,'.mat'];
+    matfile=[dirpath,'C_J_',A,B{:},suffix,'.mat'];
+    %matfile=[dirpath,'J',suffix,'.mat'];
     % Create a new folder for the results, if needed
     if ~exist(dirpath,'dir')
         mkdir(dirpath)
@@ -337,9 +394,10 @@ for nCb1=1:length(Cb_vector{1})
             % Driver input and output in string format (for an easier inclusion of different simulation options, although
             % using eval is not really recommended)
             driver_input_str='10^j,Cf,''Sources_in'',''sources.txt'',''repeat''';
+            %driver_input_str='10^j,Cf,''Sources_in'',''sources.txt'',''repeat'',''Options'',''''''AbsTol'''',1e-20,''''RelTol'''',1e-10''';
             %driver_input_str='10^j,C,T,''Sources_in'',''sources.txt'''; % For saving the full time series
             driver_output_str='C, T, ok, clust, Cf, labels_ch, clust_flux, J_out';
-            if lfluxes
+            if lfluxes || lroute
                 driver_output_str=[driver_output_str,', flux, outflux'];
             end
             %for j=[4*ones(1,5) 3*ones(1,5)]
@@ -357,15 +415,18 @@ for nCb1=1:length(Cb_vector{1})
             conc{nCa,nCb1,nCb2} = Cf;
             J(nCa,nCb1,nCb2) = J_out(end);
 
-            % Also plot the fluxes if they are saved
-            if lfluxes
-                track_fluxes(clust_flux,clust,labels_ch,flux,outflux,'ch',1);
+            % Plot the fluxes and/or save the main growth route
+            if lfluxes || lroute
+                main_routes_tmp={};
+                nch=1;
+                [~,main_routes_tmp{nch},~]=track_fluxes(clust_flux,clust,labels_ch,flux,outflux,'ch',nch,'ldisp',lfluxes);
                 if IPR > 0
                     for nch=2:3
-                        pause
-                        track_fluxes(clust_flux,clust,labels_ch,flux,outflux,'ch',nch);
+                        if lfluxes, pause, end
+                        [~,main_routes_tmp{nch},~]=track_fluxes(clust_flux,clust,labels_ch,flux,outflux,'ch',nch,'ldisp',lfluxes);
                     end
                 end
+                main_routes{nCa,nCb1,nCb2} = main_routes_tmp;
             end
 
 
@@ -392,23 +453,28 @@ for nCb1=1:length(Cb_vector{1})
                     ax=gca;
                     ax.XTickLabelRotation=45;
                     ylabel('{\itC}_{steady-state} (cm^{-3})')
-                    title(['[',A,'] = ',sprintf('%.2e',Ca),' cm^{-3}, ',Cb_leg{nleg}, ...
-                        ', {\itT} = ',num2str(temp),' K, ',loss_infostr],'FontWeight','normal')
+                    str_tmp=['[',A,'] = ',sprintf('%.2e',Ca),' cm^{-3}, '];
+                    if ~isempty(B), str_tmp=[str_tmp,Cb_leg{nleg},', ']; end
+                    str_tmp=[str_tmp,'{\itT} = ',num2str(temp),' K, ',loss_infostr];
+                    title(str_tmp,'FontWeight','normal')
                     drawnow
                 end
             end
 
-            if ldimers
-                % Save the dimer concentration
-                conc_2A_tot(nCa,nCb1,nCb2)=sum(Cf(n_2A),'omitnan');
+            if lnmers
+                % Save the n-mer concentration
+                for nmols_A=plot_An
+                    conc_An_tot{nmols_A}(nCa,nCb1,nCb2)=sum(Cf(n_An{nmols_A}),'omitnan');
+                end
             end
 
             % Update the results
             if save_data==1
-                %save(matfile,'clust','conc','J','Ca_vector','Cb_vector','temp','loss_infostr','IPR')
-                save(matfile,'J','Ca_vector','Cb_vector','Cb_vector_ppt',...
-                    'temp','IPR','cs_ref','cs_exp','loss_infostr',...
-                    'B','Gfile','inputfile')
+                save(matfile,'clust','conc','conc_An_tot','J','Ca_vector','Cb_vector',...
+                    'temp','loss_infostr','IPR','Gfile','inputfile')
+%                 save(matfile,'J','Ca_vector','Cb_vector','Cb_vector_ppt',...
+%                     'temp','IPR','cs_ref','cs_exp','loss_infostr',...
+%                     'B','Gfile','inputfile')
             end
             
             if lfluxes || ldistribution
@@ -425,64 +491,70 @@ end
 
 %%%%%%%%% Figures %%%%%%%%%
 
-title_str=['{\itT} = ',num2str(temp),' K, ',loss_infostr];
-if IPR > 0
-    title_str=[title_str,', IPR = ',num2str(IPR),' cm^{-3}s^{-1}'];
-end
+if lshow
 
-sum_str=['\Sigma [',A];
-for nmolB=1:length(B)
-    sum_str=[sum_str,'\cdot',B{nmolB},'_{\itn}'];
-    if length(B)>1
-        sum_str=[sum_str,'_{',num2str(nmolB),'}'];
+    title_str=['{\itT} = ',num2str(temp),' K, ',loss_infostr];
+    if IPR > 0
+        title_str=[title_str,', IPR = ',num2str(IPR),' cm^{-3}s^{-1}'];
     end
-end
-sum_str=[sum_str,'] (cm^{-3})'];
 
-if lmon_A==0
-    xlabel_str=sum_str;
-else
-    xlabel_str=['[',A,'] (cm^{-3})'];
-end
-
-if lJ
-    % Plot the formation rate out of the system at the different A and B concentrations
-    figure(21)
-    set(gca,'XScale','log')
-    set(gca,'YScale','log')
-    set(gcf,'Color','white')
-    box on
-    hold on; set(gca,'ColorOrderIndex',1)
-    for nCb1=1:length(Cb_vector{1})
-        for nCb2=1:length(Cb_vector{2})
-            plot(Ca_vector,J(:,nCb1,nCb2),LStyle)
+    sum_str=['\Sigma [',A];
+    for nmolB=1:length(B)
+        sum_str=[sum_str,'\cdot',B{nmolB},'_{\itn}'];
+        if length(B)>1
+            sum_str=[sum_str,'_{',num2str(nmolB),'}'];
         end
     end
-    xlim([Ca_limits(1),Ca_limits(end)])
-    xlabel(xlabel_str)
-    ylabel('{\itJ} (cm^{-3} s^{-1})')
-    title(['Steady-state {\itJ}, ',title_str],'FontWeight','normal')
-    legend(Cb_leg,'location','best')
-end
+    sum_str=[sum_str,'] (cm^{-3})'];
 
-if ldimers
-    % Plot the sum of 2A clusters (2A,2A1B,2A2B...) at the different A and B concentrations
-    figure(22)
-    set(gca,'XScale','log')
-    set(gca,'YScale','log')
-    set(gcf,'Color','white')
-    box on
-    hold on; set(gca,'ColorOrderIndex',1)
-    for nCb1=1:length(Cb_vector{1})
-        for nCb2=1:length(Cb_vector{2})
-            plot(Ca_vector,conc_2A_tot(:,nCb1,nCb2),LStyle)
+    if lmon_A==0
+        xlabel_str=sum_str;
+    else
+        xlabel_str=['[',A,'] (cm^{-3})'];
+    end
+
+    if lJ
+        % Plot the formation rate out of the system at the different A and B concentrations
+        figure(21)
+        set(gca,'XScale','log')
+        set(gca,'YScale','log')
+        set(gcf,'Color','white')
+        box on
+        hold on; set(gca,'ColorOrderIndex',1)
+        for nCb1=1:length(Cb_vector{1})
+            for nCb2=1:length(Cb_vector{2})
+                plot(Ca_vector,J(:,nCb1,nCb2),LStyle)
+            end
+        end
+        xlim([Ca_limits(1),Ca_limits(end)])
+        xlabel(xlabel_str)
+        ylabel('{\itJ} (cm^{-3} s^{-1})')
+        title(['Steady-state {\itJ}, ',title_str],'FontWeight','normal')
+        if ~isempty(B), legend(Cb_leg,'location','best'), end
+    end
+
+    if lnmers
+        % Plot the sum of An clusters (An, AnB1, AnB2, ...) at the different A and B concentrations
+        for nmols_A=plot_An
+            figure(22+nmols_A-1)
+            set(gca,'XScale','log')
+            set(gca,'YScale','log')
+            set(gcf,'Color','white')
+            box on
+            hold on; set(gca,'ColorOrderIndex',1)
+            for nCb1=1:length(Cb_vector{1})
+                for nCb2=1:length(Cb_vector{2})
+                    plot(Ca_vector,conc_An_tot{nmols_A}(:,nCb1,nCb2),LStyle)
+                end
+            end
+            xlim([Ca_limits(1),Ca_limits(end)])
+            xlabel(xlabel_str)
+            ylabel(strrep(sum_str,A,[A,'_{',num2str(nmols_A),'}']))
+            title(['Steady-state concentrations, ',title_str],'FontWeight','normal')
+            if ~isempty(B), legend(Cb_leg,'location','best'), end
         end
     end
-    xlim([Ca_limits(1),Ca_limits(end)])
-    xlabel(xlabel_str)
-    ylabel(strrep(sum_str,A,[A,'_2']))
-    title(['Steady-state concentrations, ',title_str],'FontWeight','normal')
-    legend(Cb_leg,'location','best')
+    
 end
 
 end
