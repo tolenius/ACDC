@@ -196,12 +196,14 @@ end
 % Find the main growth route
 main_route={};
 end_tmp=fluxes(1).start;
-while check_cluster(end_tmp)
+ch_tmp=solve_charge(end_tmp,ch_info);
+while check_cluster(end_tmp) && ch_tmp==ch
     main_route=[end_tmp, main_route];
     ind_all=strcmp(end_tmp,{fluxes.end});
     start_all={fluxes(ind_all).start};
     [~,ind_max]=max([fluxes(ind_all).val],[],'omitnan');
     end_tmp=start_all{ind_max};
+    ch_tmp=solve_charge(end_tmp,ch_info);
 end
 
 if lplot == 1
