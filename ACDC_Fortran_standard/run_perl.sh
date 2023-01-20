@@ -2,6 +2,7 @@
 
 
 #### Vapor names, assuming that the cluster set file is named according to them ####
+# The first vapor monomer will also be used as the reference size for scavenging sink CS
 vapors=("A" "N")
 
 #### Include ions? ####
@@ -17,7 +18,7 @@ l_const_vapor=0
 
 #### Suffix of the cluster system files ####
 
-suffix="_example"
+suffix="_example_2"
 
 
 # End of the input section
@@ -62,4 +63,4 @@ cluster_file+=".inp"
 
 # Generate the equations
 
-perl acdc_2020_04_28.pl --fortran --save_outgoing --variable_cs --cs exp_loss --exp_loss_exponent -1.6 --e ./Perl_input/HS298.15K_example.txt --dip ./Perl_input/dip_pol_298.15K_example.txt `echo "$perl_opt --i ./Perl_input/$cluster_file --append $vapor_suffix$suffix"`
+perl acdc_2020_04_28.pl --fortran --save_outgoing --variable_cs --cs exp_loss --exp_loss_exponent -1.6 --e ./Perl_input/HS298.15K_example.txt --dip ./Perl_input/dip_pol_298.15K_example.txt `echo "$perl_opt --i ./Perl_input/$cluster_file --exp_loss_ref_cluster 1${vapors[0]} --append $vapor_suffix$suffix"`
