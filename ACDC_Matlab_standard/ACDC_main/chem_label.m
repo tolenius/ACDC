@@ -46,9 +46,9 @@ for nmol=1:length(molnames)
     
     nmols_tmp=nmols(nmol);
     
-    if molnames{nmol} == mol_charged
+    if strcmp(molnames{nmol},mol_charged)
         nmols_tmp=nmols_tmp-1;
-    elseif molnames{nmol} == mol_neutral
+    elseif strcmp(molnames{nmol},mol_neutral)
         nmols_tmp=nmols_tmp+1;
     end
     
