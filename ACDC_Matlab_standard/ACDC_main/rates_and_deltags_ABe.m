@@ -133,7 +133,7 @@ if l_inc_extra
     
     if ch_extra > 1
         
-        if ch ==1
+        if ch == 1
             % If the extra species is charged, change the ch variable accordingly
             ch=ch_extra;
         elseif ch_extra ~= ch
@@ -173,7 +173,7 @@ if ~l_inc_extra
 end
 
 if ch > 1
-    if ch_carrier == "" || ch_carrier == name_ch
+    if ch_carrier == "" || strcmp(ch_carrier,name_ch)
         
         % Find the electrically neutral molecule that acts as a charge carrier
         if ch_extra > 1
@@ -189,8 +189,8 @@ if ch > 1
             if ~isempty(name_ch_tmp)
                 ch_carrier=name_tmp;
                 name_ch=name_ch_tmp;
-                if name_ch == labels_ch{end-1,ch}
-                    if name_tmp == A || name_tmp == B
+                if strcmp(name_ch,labels_ch{end-1,ch})
+                    if strcmp(name_tmp,A) || strcmp(name_tmp,B)
                         l_ch_nonmol_AB=1;
                     else
                         l_ch_nonmol_extra=1;
@@ -230,7 +230,7 @@ for nmol=1:2
     else
         name_tmp=B;
     end
-    if ch_carrier == name_tmp
+    if strcmp(ch_carrier,name_tmp)
         clustname=mon_ch;
     else
         clustname=['1',name_tmp];
@@ -239,7 +239,7 @@ for nmol=1:2
     if ismember(clustname,clust)
         % If a charged monomer is found in the DeltaG file with a non-zero DeltaG, set it to zero and
         % subtract the value from the DeltaGs of all charged clusters of the same polarity
-        if clustname == mon_ch
+        if strcmp(clustname,mon_ch)
             nclust=find(strcmp(clust,clustname));
             if deltag_ref(nclust) ~= 0
                 scale_ch=deltag_ref(nclust);
@@ -466,9 +466,9 @@ for nCb=1:length(Cb_vector)
                 if l_inc_extra
                     for nmol=1:length(molnames_extra)
                         nmols_tmp=nmols_extra(nmol);
-                        if molnames_extra{nmol} == name_ch
+                        if strcmp(molnames_extra{nmol},name_ch)
                             continue
-                        elseif l_ch_nonmol_extra && molnames_extra{nmol} == ch_carrier
+                        elseif l_ch_nonmol_extra && strcmp(molnames_extra{nmol},ch_carrier)
                             nmols_tmp=nmols_tmp-1;
                         end
                         if l_ppt_extra
@@ -646,19 +646,19 @@ for nCb=1:length(Cb_vector)
             elseif ch == 3
                 txt_str='^+';
             end
-            if ch_carrier == A
+            if strcmp(ch_carrier,A)
                 xlabel(['Molecules ',A,' including ',A,txt_str],'FontSize',Fsize,'FontWeight','demi')
             else
                 xlabel(['Molecules ',A],'FontSize',Fsize,'FontWeight','demi')
             end
-            if ch_carrier == B
+            if strcmp(ch_carrier,B)
                 ylabel(['Molecules ',B,' including ',B,txt_str],'FontSize',Fsize,'FontWeight','demi')
             else
                 ylabel(['Molecules ',B],'FontSize',Fsize,'FontWeight','demi')
             end
             
             t=title(title_str,'FontSize',Fsize,'FontWeight','demi');
-            set(t,'Position',get(t,'Position')+[2 0 0])
+            set(t,'Position',get(t,'Position')+[min(fig_size(1)/fig_size_def(1)-1,2) 0 0])
             
             if l_inc_extra
                 txt_str=['All clusters contain also ',chem_label(clust_extra,labels_ch,0)];
