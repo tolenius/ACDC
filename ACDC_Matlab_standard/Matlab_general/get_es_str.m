@@ -1,9 +1,13 @@
 function [es_str] = get_es_str(num,prec,varargin)
 % Function for creating a neat output string for scientific notation
+% Example: get_es_str(3.22571e4,1,[-1 1]) gives '3.2\cdot10^{4}'
+%          get_es_str(2.3e-1,1,[-1 1])    gives '0.23'
 % Input:
-%    number for which the string is created and the wanted precision
+%    num     number for which the string is created
+%    prec    wanted precision in terms of number of decimals in the coefficient part
 % Optional input:
 %    range in which fixed-point notation is used instead of exponential representation
+%    (given as vector of the min and max values)
 % Output:
 %    the number as a text string
 
