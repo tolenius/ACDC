@@ -89,7 +89,7 @@ if lexp_loss == 1
         loss_commandstr=[loss_commandstr,' --exp_loss_ref_size 0.55'];
     end
     loss_suffixstr=[loss_suffixstr,'_cs_exp',num2str(cs_exp),'_ref',sprintf('%.6e',cs_ref)];
-    loss_infostr=[loss_infostr,', scavenging: {\itm} = ',num2str(cs_exp),', CS_{ref} = ',sprintf('%.2e',cs_ref),' s^{-1}'];
+    loss_infostr=[loss_infostr,', CS_{ref} = ',get_es_str(cs_ref,0),' s^{-1}'];
 end
 if lCLOUD_loss == 1
     loss_commandstr=[loss_commandstr,' --use_wl --wl CLOUD4_simple --use_dilution'];
@@ -224,7 +224,7 @@ if isempty(B)
     Cb_points{1}=1;
     
     % If there is only compound A, its input concentration must correspond to monomers
-    lmon_A=1;
+    incl_with_mon={'', '', ''};
 end
 
 if length(B) < 2
@@ -234,8 +234,8 @@ if length(B) < 2
     Cb_points{2}=1;
 end
 
-if lmon_A && ~isempty(B)
-    fprintf(['\nUsing the true ',A,' monomer concentration - do you really want this?\n'])
+if all(cellfun(@isempty,incl_with_mon)) && ~isempty(B)
+    fprintf('\nUsing true monomer concentration for all vapors - do you really want this?\n')
 end
 
 % Create the vapor concentration vectors, if vectors of separate values are not used
@@ -282,8 +282,8 @@ main_routes = cell(length(Ca_vector),length(Cb_vector{1}),length(Cb_vector{2}));
 
 if save_data==1
     % .mat file in which the results will be saved
-    matfile=[dirpath,'C_J_',A,B{:},suffix,'.mat'];
-    %matfile=[dirpath,'J',suffix,'.mat'];
+    %matfile=[dirpath,'C_J_',A,B{:},suffix,'.mat'];
+    matfile=[dirpath,'J',suffix,'.mat'];
     % Create a new folder for the results, if needed
     if ~exist(dirpath,'dir')
         mkdir(dirpath)
@@ -293,6 +293,50 @@ end
 % Legend
 Cb_leg=cell(1,length(Cb_vector{1})*length(Cb_vector{2}));
 nleg=0;
+
+% Settings related to effective vapor concentrations
+vapor_label={'', '', ''};
+for nmol=1:length(B)+1
+
+    if nmol == 1
+        vapor_label{nmol}=['[',A,']'];
+    else
+        vapor_label{nmol}=['[',B{nmol-1},']'];
+    end
+
+    % Include possible other complexes contributing to effective/measurable vapor concentration
+    if ~isempty(incl_with_mon{nmol})
+        
+        % See if the given clusters that contribute are actually included
+        clust_tmp=strsplit(incl_with_mon{nmol},'-');
+        clust_tmp=clust_tmp(~cellfun('isempty',clust_tmp));
+
+        % Rewrite the string for contributing clusters depending on
+        % what is included and on the cluster name label convention
+        str_tmp='';
+        for nct=1:length(clust_tmp)
+            lfound=0;
+            for nc=1:length(clust)
+                if compare_clusters(clust{nc},clust_tmp{nct})
+                    str_tmp=[str_tmp,'-',clust{nc}];
+                    lfound=1;
+                    break
+                end
+            end
+            if lfound==0
+                disp([clust_tmp{nct},' is not in the cluster set, excluding it in the measurable vapor'])
+            end
+        end
+        incl_with_mon{nmol}=str_tmp;
+        
+        % Add note to legends etc.
+        if ~isempty(incl_with_mon{nmol})
+            vapor_label{nmol}=[vapor_label{nmol},'_{eff}'];
+        end
+        
+    end
+    
+end
 
 %%%%%%%%% Loops over all the conditions %%%%%%%%%
 
@@ -313,9 +357,9 @@ for nCb1=1:length(Cb_vector{1})
         str='';
         for nmolB=1:length(B)
             if lB_ppt{nmolB} == 1
-                str=[str,'[',B{nmolB},'] = ',num2str(Cb_vector_ppt{nmolB}(nCb{nmolB})),' ppt, '];
+                str=[str,vapor_label{nmolB+1},' = ',num2str(Cb_vector_ppt{nmolB}(nCb{nmolB})),' ppt, '];
             else
-                str=[str,'[',B{nmolB},'] = ',sprintf('%0.2e',Cb_vector{nmolB}(nCb{nmolB})),' cm^{-3}, '];
+                str=[str,vapor_label{nmolB+1},' = ',get_es_str(Cb_vector{nmolB}(nCb{nmolB}),0),' cm^{-3}, '];
             end
         end
         str=str(1:length(str)-2);
@@ -328,47 +372,22 @@ for nCb1=1:length(Cb_vector{1})
             Ca = Ca_vector(nCa);
             
             %fprintf('\n')
-            %disp(['[',A,'] = ',sprintf('%0.2e',Ca),' cm^{-3}, ',str]);
+            %disp([vapor_label{1},' = ',sprintf('%0.2e',Ca),' cm^{-3}, ',str]);
 
-            % Setting the input concentrations
+            % Setting the input concentrations/sources
             fid=fopen('sources.txt','w');
             
-            fprintf(fid,['constant 1',A,' %e'],Ca);
-            if lmon_A==0
-                if ~exist('nonmon_A_str','var')
-                    nonmon_A_str=' ';
-                    clust_temp={};
-                    for nmolB=1:length(B)
-                        for nB1=1:nB_for_1A
-                            clust_temp=[clust_temp,['1',A,num2str(nB1),B{nmolB}]];
-                            if length(B)>1 && nmolB==1
-                                % Clusters containing both B compounds
-                                for nB2=1:(nB_for_1A-nB1)
-                                    clust_temp=[clust_temp,['1',A,num2str(nB1),B{1},num2str(nB2),B{2}]];
-                                end
-                            end
-                        end
-                    end
-                    for nct=1:length(clust_temp)
-                        lfound=0;
-                        for nc=1:length(clust)
-                            if compare_clusters(clust{nc},clust_temp{nct})
-                                nonmon_A_str=[nonmon_A_str,'-',clust{nc}];
-                                lfound=1;
-                                break
-                            end
-                        end
-                        if lfound==0
-                            disp([clust_temp{nct},' is not in the cluster set, excluding it in the measurable ',A])
-                        end
-                    end
+            for nmol=1:length(B)+1
+                if nmol == 1
+                    fprintf(fid,['constant 1',A,' %e'],Ca);
+                else
+                    fprintf(fid,['constant 1',B{nmol-1},' %e'],Cb{nmol-1});
                 end
-                fprintf(fid,nonmon_A_str);
-            end
-            fprintf(fid,'\n');
-            
-            for nmolB=1:length(B)
-                fprintf(fid,['constant 1',B{nmolB},' %e\n'],Cb{nmolB});
+                % Include possible other complexes contributing to effective/measurable vapor concentration
+                if ~isempty(incl_with_mon{nmol})
+                    fprintf(fid,[' ',incl_with_mon{nmol}]);
+                end
+                fprintf(fid,'\n');
             end
             
             if IPR > 0
@@ -453,7 +472,7 @@ for nCb1=1:length(Cb_vector{1})
                     ax=gca;
                     ax.XTickLabelRotation=45;
                     ylabel('{\itC}_{steady-state} (cm^{-3})')
-                    str_tmp=['[',A,'] = ',sprintf('%.2e',Ca),' cm^{-3}, '];
+                    str_tmp=[vapor_label{1},' = ',get_es_str(Ca,0),' cm^{-3}, '];
                     if ~isempty(B), str_tmp=[str_tmp,Cb_leg{nleg},', ']; end
                     str_tmp=[str_tmp,'{\itT} = ',num2str(temp),' K, ',loss_infostr];
                     title(str_tmp,'FontWeight','normal')
@@ -470,11 +489,11 @@ for nCb1=1:length(Cb_vector{1})
 
             % Update the results
             if save_data==1
-                save(matfile,'clust','conc','conc_An_tot','J','Ca_vector','Cb_vector',...
-                    'temp','loss_infostr','IPR','Gfile','inputfile')
-%                 save(matfile,'J','Ca_vector','Cb_vector','Cb_vector_ppt',...
-%                     'temp','IPR','cs_ref','cs_exp','loss_infostr',...
-%                     'B','Gfile','inputfile')
+%                 save(matfile,'clust','conc','conc_An_tot','J','Ca_vector','Cb_vector',...
+%                     'temp','loss_infostr','IPR','Gfile','inputfile')
+                save(matfile,'J','Ca_vector','Cb_vector','Cb_vector_ppt',...
+                    'temp','IPR','cs_ref','cs_exp','loss_infostr',...
+                    'B','Gfile','inputfile')
             end
             
             if lfluxes || ldistribution
@@ -497,21 +516,8 @@ if lshow
     if IPR > 0
         title_str=[title_str,', IPR = ',num2str(IPR),' cm^{-3}s^{-1}'];
     end
-
-    sum_str=['\Sigma [',A];
-    for nmolB=1:length(B)
-        sum_str=[sum_str,'\cdot',B{nmolB},'_{\itn}'];
-        if length(B)>1
-            sum_str=[sum_str,'_{',num2str(nmolB),'}'];
-        end
-    end
-    sum_str=[sum_str,'] (cm^{-3})'];
-
-    if lmon_A==0
-        xlabel_str=sum_str;
-    else
-        xlabel_str=['[',A,'] (cm^{-3})'];
-    end
+    
+    xlabel_str=[vapor_label{1},' (cm^{-3})'];
 
     if lJ
         % Plot the formation rate out of the system at the different A and B concentrations
@@ -535,6 +541,15 @@ if lshow
 
     if lnmers
         % Plot the sum of An clusters (An, AnB1, AnB2, ...) at the different A and B concentrations
+        sum_str=['\Sigma [',A];
+        for nmolB=1:length(B)
+            sum_str=[sum_str,'\cdot',B{nmolB},'_{\itn}'];
+            if length(B)>1
+                sum_str=[sum_str,'_{',num2str(nmolB),'}'];
+            end
+        end
+        sum_str=[sum_str,'] (cm^{-3})'];
+
         for nmols_A=plot_An
             figure(22+nmols_A-1)
             set(gca,'XScale','log')

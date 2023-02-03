@@ -131,7 +131,10 @@ end
 % Additional options for the Perl script
 %add_perl_opt=' --no_evap';
 
-% Use the true A monomer concentration, i.e. do not count clusters consisting of one A and n B molecules
-lmon_A=0;           % It's better to keep this as 0! (It's expected to correspond to the "measurable" acid concentration)
-nB_for_1A=4;        % Maximum number of B molecules attached to the A monomer in case lmon_A=0
+% For setting the vapor concentrations, use either the true monomer concentration, or an effective concentration that
+% includes clustered molecules, e.g. acid-base heterodimers, typically corresponding to measurable vapor
+% Effective concentrations: RECOMMENDED especially for e.g. H2SO4
+incl_with_mon={strjoin(strcat(['-1',A,'1'],B),''), '', ''}; % Included clusters for A, B_1, B_2; here heterodimers are included for A and nothing for Bs
 
+% % Pure monomers for all species: better to NOT use this if A is acid and Bs are bases
+% incl_with_mon={'', '', ''};
