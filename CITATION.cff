@@ -4,6 +4,6 @@ authors:
 - family-names: "Olenius"
   given-names: "Tinja"
   orcid: "https://orcid.org/0000-0001-9900-3081"
-title: "Atmospheric Cluster Dynamics Code: Software repository"
+title: "Atmospheric Cluster Dynamics Code"
 date-released: 2020-11-25
 url: "https://github.com/tolenius/ACDC"
